@@ -128,7 +128,71 @@ instacart_data %>%
   summarize(avg_hod = mean(order_hour_of_day)) %>%
   spread(key = order_dow, value = avg_hod) %>%
   knitr::kable()
-
-
-  
 ```
+
+#Problem 3
+```{r}
+ny_noaa_data <- p8105.datasets::ny_noaa %>%
+janitor::clean_names() %>%
+  separate(date, c("year", "month", "day"), sep = "-") %>%
+  mutate(prcp = prcp / 10, 
+         tmax = as.numeric(tmax) / 10,
+         tmin = as.numeric(tmin) / 10,
+         year = as.integer(year), #needed to add this bc it wasn't recognizing year as a numeric variable. Also, need integer years obvi.
+         month = month.name[as.integer(month)])
+
+nrow(ny_noaa_data)
+ncol(ny_noaa_data)
+
+ny_noaa_data %>%
+  filter_all(any_vars(is.na(.))) %>%
+  count() / nrow(ny_noaa_data)
+#0.5289595 = proportion of missing values - that's a lot
+
+ny_noaa_data %>%
+  summarize(mean(snow, na.rm = TRUE))
+
+ny_noaa_data %>%
+  summarize(median(snow, na.rm = TRUE)) 
+
+ny_noaa_data %>%
+  summarize(max(snow, na.rm = TRUE))
+
+x <- ny_noaa_data$snow 
+y <- table(x)
+names(y)[which(y==max(y))]
+#most frequent is 0mm of snowfall, obviously
+
+ny_noaa_data %>%
+  filter(month %in% c("January", "July")) %>%
+  group_by(year, month) %>%
+  summarize(avg_high = mean(tmax, na.rm = TRUE)) %>%
+  ggplot(aes(x = year, y = avg_high)) +
+  geom_line(color = "red") +
+  facet_grid(~month)
+#line plot by month   
+
+ny_noaa_data %>%
+  filter(month =="January") %>%
+  group_by(year) %>%
+  summarize(jan_std = sd(tmax, na.rm = TRUE)) %>%
+  summarize(max(jan_std))
+#8.27 degree std dev
+
+ny_noaa_data %>%
+  filter(month =="July") %>%
+  group_by(year) %>%
+  summarize(july_std = sd(tmax, na.rm = TRUE)) %>%
+  summarize(max(july_std))
+#4.74 degree std dev. January has higher std dev in temp than July - almost twice as much. High temperature fluctuations in the winter seem to be more drastic from year to year, judging by the graph.
+
+
+
+
+
+
+
+```
+
+
+
