@@ -12,4 +12,123 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(p8105.datasets)
+library(httr)
+library(jsonlite)
+```
+
+#Problem 1
+```{r}
+#Import dataset
+brfss_smart2010 <- p8105.datasets::brfss_smart2010
+
+#clean up variables
+brfss_smart2010 = 
+  brfss_smart2010 %>%
+  janitor::clean_names() %>%
+  rename(state = locationabbr, county = locationdesc) %>%
+  filter(topic == "Overall Health")
+
+brfss_smart2010$response <- as.factor(brfss_smart2010$response) 
+brfss_smart2010$response <- fct_relevel(brfss_smart2010$response, 
+                                        c("Excellent", "Very good", "Good", "Fair", "Poor"))
+#couldn't pipe this, idk why?
+
+locations <- brfss_smart2010 %>%
+  filter(year == "2002") %>%
+  distinct(state, county) %>%
+  count(state) %>%
+  filter(n==7)
+  View(locations)
+#CT, FL, NC each have 7 locations in 2002
+
+  #line plot  
+brfss_smart2010 %>%
+  group_by(state, year) %>%
+  distinct(county) %>%
+  count(state) %>%
+  ggplot(aes(x = year, y = n)) +
+  geom_line(aes(color = state)) +
+  labs(y = "number of locations", caption = "number of locations per state from 2002-2010")
+
+brfss_table =
+  brfss_smart2010 %>%
+  janitor::clean_names() %>%
+  filter(year %in% c(2002, 2006, 2010), state == "NY", response == "Excellent") %>%
+  mutate(p_exc = data_value / 100) %>%
+  group_by(year) %>%
+  summarize("Avg proportion of excellent response" = mean(p_exc), 
+            "Std dev" = sd(p_exc)) 
+
+#it works but oof it is not pretty
+brfss_smart2010 %>%
+  group_by(year, state, response) %>%
+  summarize(avg_response = mean(data_value / 100)) %>%
+  ggplot(aes(x = year, y = avg_response)) + 
+  geom_line(aes(color = state)) +
+  facet_grid(~response)
+```
+
+#Problem 2
+```{r}
+#import and clean dataset
+instacart_data <- p8105.datasets::instacart
+janitor::clean_names(instacart_data)
+
+nrow(instacart_data) #1384617 obs
+ncol(instacart_data) #15 var
+
+instacart_data %>%
+  group_by(order_id) %>%
+  distinct(order_id) %>%
+  nrow() #131,209 distinct orders
+
+instacart_data %>%
+  group_by(product_name) %>%
+  distinct(product_name) %>%
+  nrow() #39,123 distinct products
+
+instacart_data %>%
+  group_by(department) %>%
+  distinct(department) %>%
+  nrow() #21 distinct departments
+
+orders <- instacart_data %>%
+  group_by(aisle, department) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n)) 
+#veg is most ordered aisle - 150,609, followed by fruit - 150,473.
+#134 aisles total
+  
+orders %>%
+  group_by(aisle) %>%
+  ggplot(aes(x = aisle, y = n, color = department)) +
+  coord_flip() +
+  geom_col()
+#fix this fucking bar chart it sucks
+
+instacart_data %>%
+  filter(aisle %in% 
+           c('baking ingredients', 'dog food care', 'packaged vegetables fruits')) %>%
+  group_by(aisle, product_name) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n)) %>%
+  filter(min_rank(desc(n)) < 2) %>%
+  rename("# of orders" = n, "product name" = product_name) %>%
+  knitr::kable()
+
+days_of_week <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+instacart_data$order_dow <- days_of_week[instacart_data$order_dow] 
+instacart_data$order_dow <- fct_relevel(instacart_data$order_dow, 
+                                        c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+instacart_data %>%
+  filter(product_name %in% c("Coffee Ice Cream", "Pink Lady Apples")) %>%
+  select(product_name, order_dow, order_hour_of_day) %>%
+  group_by(order_dow, product_name) %>%
+  summarize(avg_hod = mean(order_hour_of_day)) %>%
+  spread(key = order_dow, value = avg_hod) %>%
+  knitr::kable()
+
+
+  
 ```
