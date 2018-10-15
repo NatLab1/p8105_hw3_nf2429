@@ -186,11 +186,20 @@ ny_noaa_data %>%
   summarize(max(july_std))
 #4.74 degree std dev. January has higher std dev in temp than July - almost twice as much. High temperature fluctuations in the winter seem to be more drastic from year to year, judging by the graph.
 
+temps = ny_noaa_data %>%
+  filter(!is.na(tmin), !is.na(tmax)) %>%
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_bin2d() +
+  viridis::scale_fill_viridis(option = "inferno")
 
+snowfall = ny_noaa_data %>% 
+  filter(snow > 0, snow < 100) %>% 
+  mutate(year = as.factor(year)) %>% #had to change year back to a factor vector
+  ggplot(aes(x = snow, color = year)) + 
+  geom_density(alpha = .05) + 
+  viridis::scale_color_viridis(name = "year", discrete = TRUE, option = "inferno")
 
-
-
-
+complete = (temps + snowfall) 
 
 ```
 
