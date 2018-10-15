@@ -17,11 +17,11 @@ library(jsonlite)
 ```
 
 #Problem 1
+
+##Data import and cleaning
 ```{r}
-#Import dataset
 brfss_smart2010 <- p8105.datasets::brfss_smart2010
 
-#clean up variables
 brfss_smart2010 = 
   brfss_smart2010 %>%
   janitor::clean_names() %>%
@@ -29,19 +29,23 @@ brfss_smart2010 =
   filter(topic == "Overall Health")
 
 brfss_smart2010$response <- as.factor(brfss_smart2010$response) 
-brfss_smart2010$response <- fct_relevel(brfss_smart2010$response, 
-                                        c("Excellent", "Very good", "Good", "Fair", "Poor"))
-#couldn't pipe this, idk why?
+brfss_smart2010$response <- 
+  fct_relevel(brfss_smart2010$response, 
+    c("Excellent", "Very good", "Good", "Fair", "Poor"))
+```
 
+##Tables and plots
+```{r}
 locations <- brfss_smart2010 %>%
   filter(year == "2002") %>%
   distinct(state, county) %>%
   count(state) %>%
   filter(n==7)
   View(locations)
-#CT, FL, NC each have 7 locations in 2002
+```
+From the table, we can see that Connecticut, Florida, and North Carolina all had 7 distinct locations in 2002.
 
-  #line plot  
+```{r}
 brfss_smart2010 %>%
   group_by(state, year) %>%
   distinct(county) %>%
@@ -57,41 +61,26 @@ brfss_table =
   mutate(p_exc = data_value / 100) %>%
   group_by(year) %>%
   summarize("Avg proportion of excellent response" = mean(p_exc), 
-            "Std dev" = sd(p_exc)) 
+            "Std dev" = sd(p_exc)) %>%
+  knitr::kable()
 
-#it works but oof it is not pretty
 brfss_smart2010 %>%
   group_by(year, state, response) %>%
   summarize(avg_response = mean(data_value / 100)) %>%
   ggplot(aes(x = year, y = avg_response)) + 
   geom_line(aes(color = state)) +
   facet_grid(~response)
+#fix this
 ```
 
 #Problem 2
 ```{r}
-#import and clean dataset
 instacart_data <- p8105.datasets::instacart
 janitor::clean_names(instacart_data)
+```
+This dataset shows the grocery orders made on the website Instacart. It tells us the order IDs, product IDs, user IDs, items chosen, department, aisle, which day of the week and the hour of day that each order was placed. It also shows how long each user went between orders. There are `r nrow(instacart_data)` observations and `r ncol(instacart_data)` variables in the dataset. There are `r instacart_data %>% group_by(order_id) %>% distinct(order_id) %>% nrow()` distinct orders, `r instacart_data %>% group_by(product_name) %>% distinct(product_name) %>% nrow()` distinct products, and `r instacart_data %>% group_by(department) %>% distinct(department) %>% nrow()` distinct departments in this dataset.
 
-nrow(instacart_data) #1384617 obs
-ncol(instacart_data) #15 var
-
-instacart_data %>%
-  group_by(order_id) %>%
-  distinct(order_id) %>%
-  nrow() #131,209 distinct orders
-
-instacart_data %>%
-  group_by(product_name) %>%
-  distinct(product_name) %>%
-  nrow() #39,123 distinct products
-
-instacart_data %>%
-  group_by(department) %>%
-  distinct(department) %>%
-  nrow() #21 distinct departments
-
+```{r}
 orders <- instacart_data %>%
   group_by(aisle, department) %>%
   summarize(n = n()) %>%
@@ -104,7 +93,7 @@ orders %>%
   ggplot(aes(x = aisle, y = n, color = department)) +
   coord_flip() +
   geom_col()
-#fix this fucking bar chart it sucks
+#fix this fucking bar chart it sucks ass
 
 instacart_data %>%
   filter(aisle %in% 
